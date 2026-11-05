@@ -1,6 +1,7 @@
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   Badge,
+  Button,
   Card,
   Heading,
   SimpleGrid,
@@ -19,6 +20,7 @@ import { ChangeTaskAssigneeForm } from "@/features/change-task-assignee";
 export const ObjectDetailsPage = () => {
   const { objectId } = useParams<{ objectId: string }>();
   const { profile } = useAuth();
+  const navigate = useNavigate();
 
   const objectQuery = useObjectById(objectId ?? "");
   const tasksQuery = useObjectTasks(objectId ?? "");
@@ -91,6 +93,13 @@ export const ObjectDetailsPage = () => {
                     Создана:{" "}
                     {new Date(task.created_at).toLocaleDateString("ru-RU")}
                   </Text>
+
+                  <Button
+                    width="100%"
+                    onClick={() => navigate(`/tasks/${task.id}`)}
+                  >
+                    Открыть задачу
+                  </Button>
 
                   {profile?.role === "manager" && (
                     <ChangeTaskAssigneeForm
