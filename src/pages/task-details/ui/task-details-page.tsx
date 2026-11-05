@@ -1,19 +1,18 @@
 import { useParams } from "react-router-dom";
-import { Badge, Card, Heading, Separator, Stack, Text } from "@chakra-ui/react";
+import { Badge, Card, Heading, Stack, Text } from "@chakra-ui/react";
 
 import { useAuth } from "@/app/providers/auth/use-auth";
 import { statusColors, statusLabels } from "@/shared/consts/consts";
 
 import { ChangeTaskStatusActions } from "@/features/change-task-status";
-import { useTaskById, useTaskStatusHistory } from "@/entities/task";
-import { useObjectById } from "@/entities/object";
+import { TaskStatusHistory, useTaskById } from "@/entities/task";
+import { ObjectCard, useObjectById } from "@/entities/object";
 
 export const TaskDetailsPage = () => {
   const { profile } = useAuth();
   const { taskId } = useParams<{ taskId: string }>();
 
   const taskQuery = useTaskById(taskId ?? "");
-  const historyQuery = useTaskStatusHistory(taskId ?? "");
   const objectQuery = useObjectById(taskQuery.data?.object_id ?? "");
 
   if (taskQuery.isPending) {
@@ -110,10 +109,7 @@ export const TaskDetailsPage = () => {
         </Card.Header>
 
         <Card.Body>
-          <Stack gap="2">
-            <Heading size="sm">{object.name}</Heading>
-            <Text color="fg.muted">{object.address}</Text>
-          </Stack>
+          <ObjectCard object={object} />
         </Card.Body>
       </Card.Root>
 
@@ -123,43 +119,7 @@ export const TaskDetailsPage = () => {
         </Card.Header>
 
         <Card.Body>
-          {historyQuery.isPending ? (
-            <Text>Загрузка истории...</Text>
-          ) : historyQuery.isError ? (
-            <Text color="red.500">Не удалось загрузить историю изменений.</Text>
-          ) : historyQuery.data.length === 0 ? (
-            <Text color="fg.muted">История изменений пока пуста.</Text>
-          ) : (
-            <Stack gap="3">
-              {historyQuery.data.map((item, index) => (
-                <Stack key={item.id} gap="3">
-                  <Stack gap="2">
-                    <Text fontWeight="medium">
-                      {item.old_status
-                        ? statusLabels[item.old_status]
-                        : "Создание задачи"}
-                      {" → "}
-                      {statusLabels[item.new_status]}
-                    </Text>
-
-                    <Text fontSize="sm" color="fg.muted">
-                      Кто изменил: {item.changed_by}
-                    </Text>
-
-                    <Text fontSize="sm" color="fg.muted">
-                      {new Date(item.created_at).toLocaleString("ru-RU")}
-                    </Text>
-
-                    {item.comment && (
-                      <Text fontSize="sm">Комментарий: {item.comment}</Text>
-                    )}
-                  </Stack>
-
-                  {index !== historyQuery.data.length - 1 && <Separator />}
-                </Stack>
-              ))}
-            </Stack>
-          )}
+          <TaskStatusHistory taskId={task.id} />
         </Card.Body>
       </Card.Root>
     </Stack>

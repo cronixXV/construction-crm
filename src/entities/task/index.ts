@@ -14,3 +14,6 @@ export { useMyTasks } from "./api/use-my-tasks";
 export { useTaskById } from "./api/use-task-by-id";
 export { useTaskStatusHistory } from "./api/use-task-status-history";
 export { changeTaskStatus } from "./api/change-task-status";
+
+export { TaskCard } from "./ui/task-card";
+export { TaskStatusHistory } from "./ui/task-status-history";

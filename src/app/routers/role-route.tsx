@@ -1,4 +1,5 @@
 import { Navigate, Outlet } from "react-router-dom";
+import { Center, Spinner } from "@chakra-ui/react";
 
 import { useAuth } from "@/app/providers/auth/use-auth";
 
@@ -12,7 +13,11 @@ export const RoleRoute = ({ allowedRoles }: IRoleRouteProps) => {
   const { profile, isLoading } = useAuth();
 
   if (isLoading) {
-    return <p>Загрузка профиля...</p>;
+    return (
+      <Center h="100vh">
+        <Spinner size="xl" />
+      </Center>
+    );
   }
 
   if (!profile) {

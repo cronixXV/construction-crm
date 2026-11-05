@@ -8,3 +8,5 @@ export {
   deleteObject,
 } from "./api/objects-api";
 export { useObjectById } from "./api/use-object-by-id";
+
+export { ObjectCard } from "./ui/object-card";

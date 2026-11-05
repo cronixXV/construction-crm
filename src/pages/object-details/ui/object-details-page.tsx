@@ -1,6 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Badge,
   Button,
   Card,
   Heading,
@@ -10,10 +9,9 @@ import {
 } from "@chakra-ui/react";
 
 import { useAuth } from "@/app/providers/auth/use-auth";
-import { statusLabels } from "@/shared/consts/consts";
 
 import { useObjectById } from "@/entities/object";
-import { useObjectTasks } from "@/entities/task";
+import { TaskCard, useObjectTasks } from "@/entities/task";
 import { CreateTaskForm } from "@/features/create-task";
 import { ChangeTaskAssigneeForm } from "@/features/change-task-assignee";
 
@@ -74,33 +72,22 @@ export const ObjectDetailsPage = () => {
       ) : (
         <SimpleGrid columns={{ base: 1, md: 2 }} gap="4">
           {tasks.map((task) => (
-            <Card.Root key={task.id} variant="outline">
-              <Card.Body>
-                <Stack gap="3">
-                  <Heading size="md">{task.title}</Heading>
-
-                  {task.description && (
-                    <Text color="fg.muted">{task.description}</Text>
-                  )}
-
-                  <Badge colorPalette="blue">{statusLabels[task.status]}</Badge>
-
-                  <Text fontSize="sm" color="fg.muted">
-                    Исполнитель: {task.assignee_id}
-                  </Text>
-
-                  <Text fontSize="sm" color="fg.muted">
-                    Создана:{" "}
-                    {new Date(task.created_at).toLocaleDateString("ru-RU")}
-                  </Text>
-
+            <TaskCard
+              key={task.id}
+              task={task}
+              meta={
+                <Text fontSize="sm" color="fg.muted">
+                  Исполнитель: {task.assignee_id}
+                </Text>
+              }
+              actions={
+                <>
                   <Button
                     width="100%"
                     onClick={() => navigate(`/tasks/${task.id}`)}
                   >
                     Открыть задачу
                   </Button>
-
                   {profile?.role === "manager" && (
                     <ChangeTaskAssigneeForm
                       taskId={task.id}
@@ -108,9 +95,9 @@ export const ObjectDetailsPage = () => {
                       currentAssigneeId={task.assignee_id}
                     />
                   )}
-                </Stack>
-              </Card.Body>
-            </Card.Root>
+                </>
+              }
+            />
           ))}
         </SimpleGrid>
       )}

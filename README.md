@@ -1,75 +1,304 @@
-# React + TypeScript + Vite
+# Construction CRM
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Мини-CRM для управления строительными объектами и задачами. Система поддерживает две роли пользователей — менеджера и исполнителя — и обеспечивает контроль доступа на уровне PostgreSQL с помощью Supabase RLS.
 
-Currently, two official plugins are available:
+**Production:** construction-crm-ten.vercel.app  
+**Stack:** React · TypeScript · Supabase · PostgreSQL · Chakra UI
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Возможности
 
-## React Compiler
+### Постановщик
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Просмотр и создание строительных объектов.
+- Редактирование и удаление объектов.
+- Создание задач и назначение исполнителей.
+- Просмотр задач по объектам.
+- Принятие выполненных задач.
+- Возврат задач на доработку с обязательным комментарием.
+- Просмотр истории изменения статусов.
 
-## Expanding the ESLint configuration
+### Исполнитель
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- Просмотр только назначенных ему задач.
+- Просмотр объектов, к которым относятся его задачи.
+- Взятие задачи в работу.
+- Отправка задачи на проверку.
+- Возврат доработанной задачи в работу.
+- Просмотр истории изменения статусов доступных задач.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Бизнес-логика статусов
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Жизненный цикл задачи:
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+| Текущий статус | Действие                | Новый статус  |
+| -------------- | ----------------------- | ------------- |
+| `new`          | Взять в работу          | `in_progress` |
+| `in_progress`  | Отправить на проверку   | `review`      |
+| `review`       | Принять задачу          | `accepted`    |
+| `review`       | Вернуть на доработку    | `revision`    |
+| `revision`     | Повторно взять в работу | `in_progress` |
 
+При возврате задачи на доработку менеджер обязан указать комментарий.
+
+Все изменения статусов выполняются через PostgreSQL RPC-функцию `change_task_status`. Прямое изменение поля `status` через REST API запрещено.
+
+История изменений формируется автоматически триггерами PostgreSQL и содержит:
+
+- задачу;
+- пользователя, изменившего статус;
+- предыдущий и новый статусы;
+- комментарий;
+- дату и время изменения.
+
+## Технологический стек
+
+### Frontend
+
+- React 19
+- TypeScript
+- Vite
+- React Router
+- TanStack Query
+- Chakra UI v3
+- React Hook Form
+- Zod
+- Supabase JS Client
+
+### Backend и база данных
+
+- Supabase Auth — аутентификация пользователей.
+- PostgreSQL — хранение данных.
+- Row Level Security (RLS) — контроль доступа.
+- PostgreSQL Functions и Triggers — бизнес-логика и история изменений.
+- Supabase CLI — управление миграциями.
+
+### Deployment
+
+- Vercel — публикация frontend.
+- Supabase — backend и база данных.
+
+## Архитектура проекта
+
+Frontend организован с использованием упрощённого Feature-Sliced Design.
+
+Основные принципы:
+
+- `app` — инициализация приложения, провайдеры и маршрутизация.
+- `pages` — страницы приложения.
+- `widgets` — самостоятельные крупные UI-блоки.
+- `features` — пользовательские действия.
+- `entities` — сущности предметной области и работа с ними.
+- `shared` — общие компоненты, конфигурация и инфраструктура.
+
+## Структура базы данных
+
+### `profiles`
+
+Профили пользователей приложения.
+
+Основные поля:
+
+- `id` — UUID пользователя, связанный с `auth.users`.
+- `email` — электронная почта.
+- `full_name` — имя пользователя.
+- `role` — роль `manager` или `executor`.
+
+### `objects`
+
+Строительные объекты.
+
+Основные поля:
+
+- `id` — идентификатор объекта.
+- `name` — название.
+- `address` — адрес.
+- `created_by` — автор создания.
+- `created_at` — дата создания.
+
+### `tasks`
+
+Задачи, связанные со строительными объектами.
+
+Основные поля:
+
+- `id` — идентификатор задачи.
+- `title` — название.
+- `description` — описание.
+- `object_id` — связанный объект.
+- `assignee_id` — назначенный исполнитель.
+- `author_id` — автор задачи.
+- `status` — текущий статус.
+- `created_at` — дата создания.
+
+### `task_status_history`
+
+История изменения статусов задач.
+
+Основные поля:
+
+- `id` — идентификатор записи.
+- `task_id` — связанная задача.
+- `changed_by` — пользователь, выполнивший действие.
+- `old_status` — предыдущий статус.
+- `new_status` — новый статус.
+- `comment` — комментарий.
+- `created_at` — дата изменения.
+
+## Безопасность
+
+Безопасность реализована на уровне базы данных, а не только frontend.
+
+### Row Level Security
+
+RLS включён для всех основных таблиц.
+
+Основные ограничения:
+
+| Операция                | Менеджер  | Исполнитель                |
+| ----------------------- | --------- | -------------------------- |
+| Просмотр профилей       | Все       | Только свой                |
+| Просмотр объектов       | Все       | Объекты со своими задачами |
+| Создание объектов       | Да        | Нет                        |
+| Редактирование объектов | Да        | Нет                        |
+| Удаление объектов       | Да        | Нет                        |
+| Просмотр задач          | Все       | Только назначенные         |
+| Создание задач          | Да        | Нет                        |
+| Изменение исполнителя   | Да        | Нет                        |
+| Изменение статуса       | Через RPC | Через RPC                  |
+| Просмотр истории        | Все       | История своих задач        |
+| Изменение истории       | Нет       | Нет                        |
+
+### Контроль изменения статусов
+
+- Статус нельзя изменить напрямую через таблицу `tasks`.
+- Изменения выполняются через `change_task_status`.
+- Допустимость перехода проверяется на стороне PostgreSQL.
+- Исполнитель может изменять статус только своей задачи.
+- Менеджер может принимать задачи и возвращать их на доработку.
+- Комментарий при возврате обязателен.
+- Запись истории создаётся автоматически в рамках транзакции.
+
+### Защита истории
+
+Для `task_status_history` отсутствуют права на `INSERT`, `UPDATE` и `DELETE` у обычных пользователей.
+
+История создаётся исключительно серверными триггерами PostgreSQL.
+
+### Работа с ключами
+
+Frontend использует только публичный Supabase ключ (`anon` или publishable key).
+
+`service_role` и другие секретные ключи не используются в клиентском приложении.
+
+## Локальный запуск
+
+### Требования
+
+- Node.js 22+
+- npm
+- Supabase project
+- Supabase CLI
+
+### 1. Клонирование репозитория
+
+```bash
+git clone YOUR_GITHUB_REPOSITORY_URL
+cd construction-crm
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+### 2. Установка зависимостей
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm install
 ```
+
+### 3. Настройка переменных окружения
+
+Создайте файл `.env` в корне проекта:
+
+```env
+VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_PUBLISHABLE_OR_ANON_KEY
+```
+
+Используйте URL проекта Supabase без `/rest/v1`.
+
+Не добавляйте секретные ключи в переменные с префиксом `VITE_`.
+
+### 4. Применение миграций
+
+Авторизуйтесь в Supabase CLI:
+
+```bash
+npx supabase login
+```
+
+Свяжите локальный проект с Supabase:
+
+```bash
+npx supabase link --project-ref YOUR_PROJECT_REF
+```
+
+Примените миграции к удалённой базе данных:
+
+```bash
+npx supabase db push --remote
+```
+
+SQL-миграции находятся в директории:
+
+```text
+supabase/
+└── migrations/
+```
+
+Миграции создают таблицы, связи, индексы, RLS-политики, функции и триггеры, необходимые для работы приложения.
+
+### 5. Создание пользователей
+
+Регистрация пользователей через приложение отключена.
+
+Для первоначальной настройки администратор создаёт пользователей через Supabase Dashboard → Authentication → Users.
+
+Для каждого пользователя необходимо создать соответствующую запись в `public.profiles` с его UUID, email, именем и ролью.
+
+Допустимые роли:
+
+- `manager`
+- `executor`
+
+Роль пользователя хранится в базе данных и используется при проверке доступа.
+
+### 6. Запуск приложения
+
+```bash
+npm run dev
+```
+
+Vite запустит приложение в режиме разработки. По умолчанию адрес:
+
+```text
+http://localhost:5173
+```
+
+### 7. Production-сборка
+
+```bash
+npm run build
+```
+
+## Деплой
+
+Frontend развёрнут на Vercel, backend и PostgreSQL размещены в Supabase.
+
+Для подключения собственного проекта:
+
+1. Импортируйте GitHub-репозиторий в Vercel.
+2. Укажите необходимые переменные окружения:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+3. Выполните deployment.
+4. В Supabase Dashboard откройте Authentication → URL Configuration.
+5. Укажите production URL приложения и разрешённые Redirect URLs.
+
+В корне проекта находится `vercel.json`, обеспечивающий корректную работу клиентской маршрутизации при прямом открытии вложенных страниц.

@@ -1,18 +1,9 @@
 import { useNavigate } from "react-router-dom";
-import {
-  Badge,
-  Button,
-  Card,
-  Heading,
-  SimpleGrid,
-  Stack,
-  Text,
-} from "@chakra-ui/react";
+import { Button, Heading, SimpleGrid, Stack, Text } from "@chakra-ui/react";
 
 import { useAuth } from "@/app/providers/auth/use-auth";
-import { statusColors, statusLabels } from "@/shared/consts/consts";
 
-import { useMyTasks } from "@/entities/task";
+import { TaskCard, useMyTasks } from "@/entities/task";
 
 export const MyTasksPage = () => {
   const { session } = useAuth();
@@ -42,29 +33,15 @@ export const MyTasksPage = () => {
       ) : (
         <SimpleGrid columns={{ base: 1, md: 2 }} gap="4">
           {tasks.map((task) => (
-            <Card.Root key={task.id} variant="outline">
-              <Card.Body>
-                <Stack gap="3">
-                  <Heading size="md">{task.title}</Heading>
-
-                  {task.description && (
-                    <Text color="fg.muted">{task.description}</Text>
-                  )}
-
-                  <Badge colorPalette={statusColors[task.status]}>
-                    {statusLabels[task.status]}
-                  </Badge>
-
-                  <Text fontSize="sm" color="fg.muted">
-                    Объект: {task.object_id}
-                  </Text>
-
-                  <Text fontSize="sm" color="fg.muted">
-                    Создана:{" "}
-                    {new Date(task.created_at).toLocaleDateString("ru-RU")}
-                  </Text>
-                </Stack>
-
+            <TaskCard
+              key={task.id}
+              task={task}
+              meta={
+                <Text fontSize="sm" color="fg.muted">
+                  Объект: {task.object_id}
+                </Text>
+              }
+              actions={
                 <Button
                   variant="outline"
                   width="100%"
@@ -72,8 +49,8 @@ export const MyTasksPage = () => {
                 >
                   Открыть задачу
                 </Button>
-              </Card.Body>
-            </Card.Root>
+              }
+            />
           ))}
         </SimpleGrid>
       )}

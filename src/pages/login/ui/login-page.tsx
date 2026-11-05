@@ -1,4 +1,4 @@
-import { Box, Heading, Text, VStack } from "@chakra-ui/react";
+import { Box, Center, Heading, Spinner, Text, VStack } from "@chakra-ui/react";
 
 import { useAuth } from "@/app/providers/auth/use-auth";
 import { RoleRedirect } from "@/app/routers/role-redirect";
@@ -9,7 +9,11 @@ export const LoginPage = () => {
   const { session, isLoading } = useAuth();
 
   if (isLoading) {
-    return <Text>Загрузка...</Text>;
+    return (
+      <Center h="100vh">
+        <Spinner size="xl" />
+      </Center>
+    );
   }
 
   if (session) {
